@@ -1,0 +1,74 @@
+**Weight Lifting Prediction**
+
+**By: Mnguyen747**
+
+**---**
+
+The idea and general approach will be as follows:
+1. Subset data for only columns that have less than 60% of NA's. Then split the data into train/test/prediction set.
+2. Train/test a random forest model on the training/testing data sets.
+3. Run the data on the prediction set.
+
+**1. Subset data for only columns that have less than 60% of NA's. Then split the data into train/test/prediction set.**
+
+```{r}
+
+rm(list=ls())
+
+library(dplyr)
+
+training <- tbl_df(read.csv(url("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"), na.strings=c("NA","#DIV/0!","")))
+prediction_set <- tbl_df(read.csv(url("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"), na.strings=c("NA","#DIV/0!","")))
+
+#Subsetting only relevant columns
+training <- select(training,c(8:ncol(training)))
+prediction_set <- select(prediction_set,c(8:ncol(prediction_set)))
+col_final <- vector()
+
+for(i in 1:ncol(training)){
+  if( (sum(is.na(training[,i]))/nrow(training)) <= .6){
+    col_final <- append(col_final,i)
+  }
+}
+
+training <- select(training, c(col_final))
+prediction_set <- select(prediction_set, c(col_final))
+prediction_set <- select(prediction_set, c(1:(ncol(prediction_set)-1)))
+
+#Now breaking training into testing/training set.
+
+index <- sample(c(1:nrow(training)),.75*nrow(training), replace = FALSE)
+training_final <- training[index,]
+testing_final <- training[-index,]
+
+rm(training,col_final,i,index)
+
+```
+
+**2. Train/test a random forest model on the training/testing data sets.**
+
+```{r}
+
+library(randomForest)
+library(caret)
+
+rf_fit <- randomForest(classe ~. , data=training_final)
+rf_pred <- predict(rf_fit, testing_final, type = "class")
+
+confusionMatrix(rf_pred,testing_final$classe)
+
+#Tried & True, Random Forest Works
+
+```
+
+**3. Run the data on the prediction set.**
+
+```{r}
+
+rf_pred <- predict(rf_fit, prediction_set, type = "class")
+print(rf_pred)
+
+#Quiz Score: 20/20 :)
+
+```
+
